@@ -88,13 +88,16 @@ export default function RegisterPage() {
     }
 
     try {
-      // Envia os dados para a API
       await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, payload)
-      router.push('/login') // Redireciona para login em caso de sucesso
-    } catch (err: any) {
-      // Captura e exibe o erro da API, se houver
-      console.error('Erro completo:', err.response?.data)
-      setError(err.response?.data?.error || 'Erro ao registrar')
+      router.push('/login')
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        console.error('Erro completo:', err.response?.data)
+        setError(err.response?.data?.error || 'Erro ao registrar')
+      } else {
+        console.error('Erro inesperado:', err)
+        setError('Erro inesperado ao registrar')
+      }
     } finally {
       setLoading(false)
     }
