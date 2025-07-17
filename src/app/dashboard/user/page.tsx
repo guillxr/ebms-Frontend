@@ -1,7 +1,7 @@
 "use client"
 
-import { AppSidebar } from "@/components/app-sidebar"
-import { SectionCards } from "@/components/section-cards"
+import { AppSidebar } from "@/components/app-sidebar/app-sidebar-user"
+import { SectionCards } from "@/components/section-cards/cards-agendamentos"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { RefreshProvider } from "@/contexts/RefreshContext"
