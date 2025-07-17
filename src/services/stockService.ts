@@ -50,7 +50,7 @@ export async function updateStock(id: string, data: UpdateStockData) {
   if (!id) throw new Error("ID do lote não informado.")
 
   const cleanData = Object.fromEntries(
-    Object.entries(data).filter(([_, v]) => v !== undefined)
+    Object.entries(data).filter(([key, value]) => value !== undefined)
   )
 
   const response = await api.put(`/estBlood/stock/${id}`, cleanData)
