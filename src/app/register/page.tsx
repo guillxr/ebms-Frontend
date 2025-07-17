@@ -1,130 +1,217 @@
 'use client'
 
-// Importações das bibliotecas de formulário e validação
-import { useForm } from 'react-hook-form'
+// Importação de bibliotecas essenciais para formulário, validação e controle de estado
+import { useForm, Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-
-// Axios para fazer requisições HTTP
 import axios from 'axios'
-
-// Hooks do React e Next.js
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-// Importação dos componentes do ShadCN
+// Importação de componentes de UI personalizados (ShadCN)
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select'
 
-// Esquema de validação com Zod
-// Define as regras para cada campo do formulário
-    const schema = z.object({
+// Mapeamento dos tipos sanguíneos visuais para os valores esperados pelo backend (enums)
+const bloodTypeMap = {
+  'A+': 'A_POSITIVO',
+  'A-': 'A_NEGATIVO',
+  'B+': 'B_POSITIVO',
+  'B-': 'B_NEGATIVO',
+  'AB+': 'AB_POSITIVO',
+  'AB-': 'AB_NEGATIVO',
+  'O+': 'O_POSITIVO',
+  'O-': 'O_NEGATIVO',
+} as const
+
+// Validação dos dados com Zod, incluindo campos obrigatórios e regras de formato
+const schema = z.object({
+  email: z.string().email('Email inválido'),
+  password: z.string().min(6, 'A senha deve ter no mínimo 6 caracteres'),
+  donorData: z.object({
     name: z.string().min(1, 'Nome é obrigatório'),
-    email: z.string().email('Email inválido'),
-    password: z.string().min(6, 'A senha deve ter no mínimo 6 caracteres'),
+    birth_date: z.string().min(1, 'Data de nascimento é obrigatória'),
+    blood_type: z.string().min(1, 'Tipo sanguíneo é obrigatório'),
+    gender: z.enum(['Masculino', 'Feminino', 'Outro'])
+            .refine((val) => val, { message: 'Gênero é obrigatório' }),
+    phone: z.string().min(1, 'Telefone é obrigatório'),
+    identity_document: z.string().min(1, 'Documento é obrigatório'),
+    address: z.string().min(1, 'Endereço é obrigatório'),
+  }),
 })
 
-// Tipagem dos dados do formulário com base no esquema Zod
+// Geração do tipo de dados a partir do schema
 type FormData = z.infer<typeof schema>
 
 export default function RegisterPage() {
-  // Estados para loading e mensagem de erro
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState('')
+  // Estados de carregamento e erro
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const router = useRouter()
 
-  // Hook de navegação do Next.js (App Router)
-    const router = useRouter()
+  // Inicialização do formulário com validação Zod
+  const {
+    register,         // Usado para inputs simples
+    handleSubmit,     // Função que trata o envio do formulário
+    control,          // Usado para inputs controlados como Select
+    formState: { errors }, // Contém erros de validação
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+  })
 
-  // Configurações do React Hook Form com integração ao Zod
-    const {
-        register, // método para conectar campos do form
-        handleSubmit, // função que lida com o envio do form
-        formState: { errors }, // objeto que contém os erros de validação
-    } = useForm<FormData>({
-        resolver: zodResolver(schema), // conecta com o schema do Zod
-    })
-
-  // Função chamada quando o formulário for enviado
-    const onSubmit = async (data: FormData) => {
+  // Função chamada ao enviar o formulário
+  const onSubmit = async (data: FormData) => {
     setLoading(true)
     setError('')
 
-    try {
-      // Faz a requisição POST para a rota de registro da API
-      // Inclui o campo 'role' que a API exige: DONOR ou ADMIN
-    await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
-        ...data,
-        role: 'DONOR', // fixado como DONOR
-    })
-
-      // Se der tudo certo, redireciona para a página de login
-    router.push('/login')
-    } catch (err: any) {
-      // Se a API retornar erro, mostra a mensagem para o usuário
-    setError(err.response?.data?.message || 'Erro ao registrar')
-    } finally {
-      setLoading(false) // Finaliza o estado de carregamento
+    // Preparação do payload no formato que o backend espera
+    const payload = {
+      email: data.email,
+      password: data.password,
+      role: 'DONOR',
+      donorData: {
+        ...data.donorData,
+        birth_date: new Date(data.donorData.birth_date).toISOString(),
+        blood_type: bloodTypeMap[data.donorData.blood_type as keyof typeof bloodTypeMap],
+        latitude: -23,
+        longitude: -46,
+      },
     }
-}
 
-    return (
+    try {
+      // Envia os dados para a API
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, payload)
+      router.push('/login') // Redireciona para login em caso de sucesso
+    } catch (err: any) {
+      // Captura e exibe o erro da API, se houver
+      console.error('Erro completo:', err.response?.data)
+      setError(err.response?.data?.error || 'Erro ao registrar')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    // Layout da tela com fundo e centralização
     <div className="flex justify-center items-center min-h-screen bg-neutral-100 dark:bg-neutral-900 p-4">
-      {/* Card estilizado para centralizar o conteúdo */}
-        <Card className="w-full max-w-md shadow-xl">
+      <Card className="w-full max-w-2xl shadow-xl">
         <CardContent className="p-6 space-y-6">
-            <h2 className="text-2xl font-bold text-center">Criar Conta</h2>
+          <h2 className="text-2xl font-bold text-center">Criar Conta</h2>
 
-          {/* Formulário com os campos controlados */}
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Campo Nome */}
-            <div className="space-y-1">
-                <Label htmlFor="name">Nome</Label>
-                <Input id="name" {...register('name')} placeholder="Seu nome" />
-                {errors.name && (
-                <p className="text-sm text-red-500">{errors.name.message}</p>
-            )}
+          {/* Formulário com grid responsivo em duas colunas */}
+          <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Campo de e-mail */}
+            <div className="col-span-2 space-y-1">
+              <Label>Email</Label>
+              <Input type="email" {...register('email')} />
+              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
             </div>
 
-            {/* Campo Email */}
-            <div className="space-y-1">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                id="email"
-                type="email"
-                {...register('email')}
-                placeholder="email@exemplo.com"
-            />
-            {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
-            )}
+            {/* Campo de senha */}
+            <div className="col-span-2 space-y-1">
+              <Label>Senha</Label>
+              <Input type="password" {...register('password')} />
+              {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
             </div>
 
-            {/* Campo Senha */}
+            {/* Nome completo */}
             <div className="space-y-1">
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                id="password"
-                type="password"
-                {...register('password')}
-                placeholder=""
-            />
-            {errors.password && (
-                <p className="text-sm text-red-500">{errors.password.message}</p>
-            )}
+              <Label>Nome</Label>
+              <Input {...register('donorData.name')} />
+              {errors.donorData?.name && <p className="text-sm text-red-500">{errors.donorData.name.message}</p>}
             </div>
 
-            {/* Exibe erro geral da API (ex: email já existe) */}
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {/* Data de nascimento */}
+            <div className="space-y-1">
+              <Label>Data de nascimento</Label>
+              <Input type="date" {...register('donorData.birth_date')} />
+              {errors.donorData?.birth_date && <p className="text-sm text-red-500">{errors.donorData.birth_date.message}</p>}
+            </div>
 
-            {/* Botão de envio com estado de loading */}
-            <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Registrando...' : 'Registrar'}
+            {/* Tipo sanguíneo (select controlado) */}
+            <div className="space-y-1">
+              <Label>Tipo Sanguíneo</Label>
+              <Controller
+                control={control}
+                name="donorData.blood_type"
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo sanguíneo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.keys(bloodTypeMap).map((type) => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.donorData?.blood_type && <p className="text-sm text-red-500">{errors.donorData.blood_type.message}</p>}
+            </div>
+
+            {/* Gênero (select com enum correto) */}
+            <div className="space-y-1">
+              <Label>Gênero</Label>
+              <Controller
+                control={control}
+                name="donorData.gender"
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o gênero" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Masculino">Masculino</SelectItem>
+                      <SelectItem value="Feminino">Feminino</SelectItem>
+                      <SelectItem value="Outro">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.donorData?.gender && <p className="text-sm text-red-500">{errors.donorData.gender.message}</p>}
+            </div>
+
+            {/* Telefone */}
+            <div className="space-y-1">
+              <Label>Telefone</Label>
+              <Input {...register('donorData.phone')} />
+              {errors.donorData?.phone && <p className="text-sm text-red-500">{errors.donorData.phone.message}</p>}
+            </div>
+
+            {/* Documento de identidade */}
+            <div className="space-y-1">
+              <Label>Documento</Label>
+              <Input {...register('donorData.identity_document')} />
+              {errors.donorData?.identity_document && <p className="text-sm text-red-500">{errors.donorData.identity_document.message}</p>}
+            </div>
+
+            {/* Endereço */}
+            <div className="col-span-2 space-y-1">
+              <Label>Endereço</Label>
+              <Input {...register('donorData.address')} />
+              {errors.donorData?.address && <p className="text-sm text-red-500">{errors.donorData.address.message}</p>}
+            </div>
+
+            {/* Exibição de erro geral da API */}
+            {error && <p className="text-sm text-red-600 col-span-2">{error}</p>}
+
+            {/* Botão de envio do formulário */}
+            <Button type="submit" className="w-full col-span-2" disabled={loading}>
+              {loading ? 'Registrando...' : 'Registrar'}
             </Button>
-        </form>
+          </form>
         </CardContent>
-    </Card>
+      </Card>
     </div>
-)
+  )
 }
