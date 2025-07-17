@@ -40,8 +40,12 @@ export async function getStock(): Promise<StockItem[]> {
 
     console.error("Resposta inesperada de getStock:", data)
     return []
-  } catch (error) {
-    console.error("Erro ao buscar estoque:", error)
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error("Erro ao buscar estoque:", error.message)
+    } else {
+      console.error("Erro desconhecido ao buscar estoque")
+    }
     return []
   }
 }
@@ -50,6 +54,7 @@ export async function updateStock(id: string, data: UpdateStockData) {
   if (!id) throw new Error("ID do lote não informado.")
 
   const cleanData = Object.fromEntries(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     Object.entries(data).filter(([key, value]) => value !== undefined)
   )
 
