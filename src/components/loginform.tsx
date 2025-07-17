@@ -2,31 +2,48 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { loginSchema, LoginFormData } from "@/lib/validation";
 import { toast } from "react-toastify";
 import { useState } from "react";
+import { z } from "zod";
+
+// Removed duplicate LoginForm function implementation
+
+const loginSchema = z.object({
+  email: z.string().min(1, "Email é obrigatório").email("Email inválido"),
+  password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
+});
 
 export default function LoginForm() {
   const [loading, setLoading] = useState(false);
+  const router = useRouter(); // Inicialize o useRouter
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormData>({
+  } = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
-    mode: "onChange", // validator em tempo real
+    mode: "onChange",
   });
 
-  const onSubmit = async (data: LoginFormData) => {
+  const onSubmit = async (data: z.infer<typeof loginSchema>) => {
     setLoading(true);
     try {
       console.log("Login data", data);
-      // Simulator de autenticação — aqui voce pode conectar com uma API
-      await new Promise((r) => setTimeout(r, 1500));
+      // Simulação de uma chamada de API de login
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Simulação de sucesso de login
+      // Em um cenário real, você receberia um token de sessão ou similar
+      // e o armazenaria (ex: em um cookie)
+      document.cookie = 'session_token=your_fake_token; path=/; max-age=3600'; // Exemplo de cookie
 
       toast.success("Login realizado com sucesso!");
-    } catch {
+      
+      // Redirecionar para o dashboard após o login bem-sucedido
+      router.push('/dashboard'); 
+
+    } catch (error) {
       toast.error("Erro ao logar. Verifique os dados e tente novamente.");
     } finally {
       setLoading(false);
@@ -34,12 +51,8 @@ export default function LoginForm() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="space-y-4 bg-card text-card-foreground p-6 rounded-lg shadow-md"
-    >
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-card text-card-foreground p-6 rounded-lg shadow-md">
       <h2 className="text-xl font-semibold">Entrar no sistema</h2>
-
       <div>
         <label className="block mb-1 text-sm" htmlFor="email">Email</label>
         <input
@@ -49,11 +62,10 @@ export default function LoginForm() {
           className="w-full p-3 border border-border rounded-lg focus:ring focus:outline-none bg-input text-black dark:text-white"
           placeholder="Digite seu email"
         />
-        {errors.email && (
+        {typeof errors.email?.message === "string" && (
           <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
         )}
       </div>
-
       <div>
         <label className="block mb-1 text-sm" htmlFor="password">Senha</label>
         <input
@@ -63,13 +75,10 @@ export default function LoginForm() {
           className="w-full p-3 border border-border rounded-lg focus:ring focus:outline-none bg-input text-black dark:text-white"
           placeholder="Digite sua senha"
         />
-        {errors.password && (
-          <p className="text-red-500 text-sm mt-1">
-            {errors.password.message}
-          </p>
+        {typeof errors.password?.message === "string" && (
+          <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
         )}
       </div>
-
       <button
         type="submit"
         disabled={loading}

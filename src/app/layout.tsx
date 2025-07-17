@@ -24,9 +24,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <nav className="bg-gray-800 p-4 text-white">
+          <ul className="flex space-x-4">
+            <li><a href="/dashboard" className="hover:text-gray-300">Dashboard</a></li>
+            <li><a href="/profile" className="hover:text-gray-300">Perfil</a></li>
+            <li><a href="/login" className="hover:text-gray-300">Login</a></li>
+            <li><a href="/register" className="hover:text-gray-300">Registrar</a></li>
+          </ul>
+        </nav>
         {children}
       </body>
     </html>
