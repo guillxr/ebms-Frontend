@@ -5,31 +5,47 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, LoginFormData } from "@/lib/validation";
 import { toast } from "react-toastify";
 import { useState } from "react";
+import { loginUser } from "@/services/authService";
+import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
 
 export default function LoginForm() {
   const [loading, setLoading] = useState(false);
-
+  const router = useRouter()
+  
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    mode: "onChange", // validator em tempo real
+    mode: "onChange",
   });
 
   const onSubmit = async (data: LoginFormData) => {
     setLoading(true);
     try {
-      console.log("Login data", data);
-      // Simulator de autenticação — aqui voce pode conectar com uma API
-      await new Promise((r) => setTimeout(r, 1500));
+      const result = await loginUser(data.email, data.password);
+      const token = result.token;
+
+      Cookies.set("token", token, {
+        expires: 30,
+        path: "/",
+      });
 
       toast.success("Login realizado com sucesso!");
+
+      const decoded = JSON.parse(atob(token.split(".")[1]));
+
+      if (decoded.role === "ADMIN") {
+        router.push("/dashboard/admin");
+      } else {
+        router.push("/dashboard/user");
+      }
     } catch {
-      toast.error("Erro ao logar. Verifique os dados e tente novamente.");
+      toast.error("Dados incorretos. Verifique seu e-mail ou senha.")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   };
 
