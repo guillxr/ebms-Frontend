@@ -25,14 +25,13 @@ export const createScheduling = async (
     headers: {
       Authorization: `Bearer ${token}`,
     },
-  });
-  return response.data;
-};
+  })
+  return response.data
+}
 
 // Buscar todos os agendamentos
 export const getAllSchedulings = async (): Promise<Scheduling[]> => {
   const response = await api.get<Scheduling[]>('/agendamentos')
-  console.log('getAllSchedulings response:', response.data)
   return response.data
 }
 
@@ -40,4 +39,16 @@ export const getAllSchedulings = async (): Promise<Scheduling[]> => {
 export const getUserSchedulings = async (userId: string): Promise<Scheduling[]> => {
   const all = await getAllSchedulings()
   return all.filter((item) => item.usuario_id === userId)
+}
+
+// Atualizar data do agendamento
+export const updateScheduling = async (id: string, data: { data_agendamento: string }) => {
+  const response = await api.put(`/agendamentos/${id}`, data)
+  return response.data
+}
+
+// Excluir agendamento
+export const deleteScheduling = async (id: string) => {
+  const response = await api.delete(`/agendamentos/${id}`)
+  return response.data
 }
