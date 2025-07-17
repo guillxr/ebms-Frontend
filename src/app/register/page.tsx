@@ -20,6 +20,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
+import Link from 'next/link'
 
 // Mapeamento dos tipos sanguíneos visuais para os valores esperados pelo backend (enums)
 const bloodTypeMap = {
@@ -213,6 +214,11 @@ export default function RegisterPage() {
               {loading ? 'Registrando...' : 'Registrar'}
             </Button>
           </form>
+          <div className="text-sm text-center">
+            <Link href="/login" className="text-primary hover:underline cursor-pointer">
+              Já tenho conta
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
