@@ -1,10 +1,25 @@
 import api from './api';
 
 export interface Donor {
-  _id: string;
-  nome: string;
-  email: string;
-  tipo_sanguineo: string;
+  id: string
+  userId: string
+  name: string
+  email: string
+  birth_date: string
+  blood_type: string
+  gender: string
+  phone: string
+  identity_document: string
+  address: string
+  latitude: number | null
+  longitude: number | null
+  last_donation: string | null
+  donation_history: string[]
+  donation_frequency: number
+  eligibility_status: boolean
+  contact_preferences: string[]
+  registration_date: string
+  update_date: string
 }
 
 // Listar todos os doadores
