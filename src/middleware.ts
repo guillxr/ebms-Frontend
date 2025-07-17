@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Lista de rotas que exigem autenticação
-const protectedRoutes = ['/dashboard', '/profile'];
+const protectedRoutes = ['/profile'];
 // Lista de rotas de autenticação que não devem ser redirecionadas se o usuário já estiver logado
 const authRoutes = ['/login', '/register'];
 
