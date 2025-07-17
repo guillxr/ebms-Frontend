@@ -1,66 +1,72 @@
-import { NextRequest, NextResponse } from "next/server"
-import { jwtVerify } from "jose"
+import { NextRequest, NextResponse } from "next/server";
+import { jwtVerify } from "jose";
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET)
+// Codifica o segredo JWT
+const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 
+// Lista de rotas públicas
+const publicRoutes = ["/", "/login", "/register"];
+
+// Middleware principal
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
-  const token = request.cookies.get("token")?.value
+  const { pathname } = request.nextUrl;
+  const token = request.cookies.get("token")?.value;
 
-  const isUserRoute = pathname.startsWith("/dashboard/user")
-  const isAdminRoute = pathname.startsWith("/dashboard/admin")
-  const isProfileRoute = pathname === "/profile" || pathname.startsWith("/profile/")
-  const isLoginPage = pathname === "/login"
-
-  if (!isUserRoute && !isAdminRoute && !isProfileRoute && !isLoginPage) {
-    return NextResponse.next()
-  }
+  const isPublicRoute = publicRoutes.includes(pathname);
+  const isDashboardUser = pathname.startsWith("/dashboard/user");
+  const isDashboardAdmin = pathname.startsWith("/dashboard/admin");
+  const isProfileRoute = pathname === "/profile" || pathname.startsWith("/profile/");
+  const isAuthRoute = pathname === "/login" || pathname === "/register";
 
   if (!token) {
-    if (isLoginPage) {
-      return NextResponse.next()
+    // Usuário não autenticado tentando acessar rota protegida
+    if (!isPublicRoute && (isDashboardUser || isDashboardAdmin || isProfileRoute)) {
+      const url = new URL("/login", request.url);
+      url.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(url);
     }
-    return NextResponse.redirect(new URL("/login", request.url))
+    return NextResponse.next();
   }
 
   try {
-    const { payload } = await jwtVerify(token, secret)
-    const role = payload.role
+    const { payload } = await jwtVerify(token, secret);
+    const role = payload.role;
 
-    if (isLoginPage) {
+    // Usuário já logado tentando acessar página de login/registro
+    if (isAuthRoute) {
       if (role === "ADMIN") {
-        return NextResponse.redirect(new URL("/dashboard/admin", request.url))
+        return NextResponse.redirect(new URL("/dashboard/admin", request.url));
       }
       if (role === "DONOR") {
-        return NextResponse.redirect(new URL("/dashboard/user", request.url))
+        return NextResponse.redirect(new URL("/dashboard/user", request.url));
       }
-      return NextResponse.next()
     }
 
-    if (role === "DONOR" && isAdminRoute) {
-      return NextResponse.redirect(new URL("/dashboard/user", request.url))
+    // Restringe o acesso entre perfis
+    if (role === "DONOR" && isDashboardAdmin) {
+      return NextResponse.redirect(new URL("/dashboard/user", request.url));
     }
 
-    if (role === "ADMIN" && isUserRoute) {
-      return NextResponse.redirect(new URL("/dashboard/admin", request.url))
+    if (role === "ADMIN" && isDashboardUser) {
+      return NextResponse.redirect(new URL("/dashboard/admin", request.url));
     }
 
     if (isProfileRoute && role !== "DONOR") {
-      return NextResponse.redirect(new URL("/login", request.url))
+      return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    return NextResponse.next()
+    return NextResponse.next();
   } catch {
-    return NextResponse.redirect(new URL("/login", request.url))
+    // Token inválido
+    const url = new URL("/login", request.url);
+    url.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(url);
   }
 }
 
+// Configura as rotas para as quais o middleware deve ser aplicado
 export const config = {
   matcher: [
-    "/dashboard/user/:path*",
-    "/dashboard/admin/:path*",
-    "/profile/:path*",
-    "/profile",
-    "/login",
+    "/((?!api|_next/static|_next/image|favicon.ico).*)", // ignora rotas estáticas
   ],
-}
+};
