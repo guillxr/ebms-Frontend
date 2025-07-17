@@ -8,11 +8,13 @@ import { useState } from "react";
 import { loginUser } from "@/services/authService";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import axios from "axios";
 
 export default function LoginForm() {
   const [loading, setLoading] = useState(false);
-  const router = useRouter()
-  
+  const router = useRouter();
+
   const {
     register,
     handleSubmit,
@@ -42,19 +44,23 @@ export default function LoginForm() {
       } else {
         router.push("/dashboard/user");
       }
-    } catch {
-      toast.error("Dados incorretos. Verifique seu e-mail ou senha.")
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Email ou senha incorretos.");
+      } else {
+        toast.error("Erro ao tentar fazer login. Tente novamente.");
+      }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="space-y-4 bg-card text-card-foreground p-6 rounded-lg shadow-md"
+      className="w-[400px] mx-auto space-y-4 bg-card text-card-foreground p-6 rounded-lg shadow-md"
     >
-      <h2 className="text-xl font-semibold">Entrar no sistema</h2>
+      <h2 className="text-xl font-semibold text-center">Entrar no sistema</h2>
 
       <div>
         <label className="block mb-1 text-sm" htmlFor="email">Email</label>
@@ -80,9 +86,7 @@ export default function LoginForm() {
           placeholder="Digite sua senha"
         />
         {errors.password && (
-          <p className="text-red-500 text-sm mt-1">
-            {errors.password.message}
-          </p>
+          <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
         )}
       </div>
 
@@ -93,6 +97,12 @@ export default function LoginForm() {
       >
         {loading ? "Entrando..." : "Fazer Login"}
       </button>
+
+      <div className="text-sm text-center">
+        <Link href="/register" className="text-primary hover:underline cursor-pointer">
+          Não tenho conta
+        </Link>
+      </div>
     </form>
   );
 }
